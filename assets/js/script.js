@@ -10,6 +10,8 @@ class Map {
 		this.destinationMarker = null
 		this.trackLine = null
 
+		this.routingControl =  L.Routing.control({createMarker: function(){return false}}).addTo(this.map);
+
 		this.icon = L.icon({
 			iconUrl: '/build/images/my-icon.png',
 			iconSize: [22, 36],
@@ -66,7 +68,7 @@ class Map {
 		})
 
 		this.trackLine = new L.Polyline(pointList, {
-			color: 'red',
+			color: 'blue',
 			weight: 3,
 			opacity: 0.5,
 			smoothFactor: 1
@@ -81,7 +83,7 @@ class Map {
 			linkList += '<option value="' + i + '">' + num + ' - ' + link.name + '</option>'
 			num ++
 		})
-		let legend = L.control({position: 'topright'})
+		let legend = L.control({position: 'topleft'})
 		legend.onAdd = function () {
 			let div = L.DomUtil.create('div', 'info legend')
 			div.innerHTML =''
@@ -157,6 +159,14 @@ class Map {
 			})
 				.bindPopup('<b>' + destination.name + '</b><br>' + description)
 				.addTo(this.map)
+		}
+
+		if (id > 0) {
+			const previous = this.links[id-1]
+			this.routingControl.setWaypoints([
+				L.latLng(previous.lat, previous.lon),
+				L.latLng(destination.lat, destination.lon)
+			])
 		}
 	}
 
