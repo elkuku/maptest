@@ -45,7 +45,7 @@ class Map {
 	}
 
 	loadMarkers(markerObjects) {
-		const icon = this.icon
+		// const icon = this.icon
 		this.markers.clearLayers()
 
 		const markers = this.markers
@@ -181,6 +181,26 @@ class Map {
 		this.map.addLayer(osm)
 
 		this.map.addLayer(this.trackMarkers)
+
+		this.map.on('locationfound', this.onLocationFound);
+		this.map.on('locationerror', this.onLocationError);
+
+		this.map.locate({setView: true, maxZoom: 16});
+	}
+
+	onLocationFound(e) {
+		console.log(e)
+		console.log(this)
+		const radius = e.accuracy / 2;
+
+		L.marker(e.latlng).addTo(this)
+			.bindPopup("You are within " + radius + " meters from this point").openPopup();
+
+		L.circle(e.latlng, radius).addTo(this);
+	}
+
+	onLocationError(e) {
+		alert(e.message);
 	}
 }
 
