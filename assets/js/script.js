@@ -1,16 +1,3 @@
-// const mymap = L.map('map').setView([-1.262326, -79.09357], 8);
-//
-// L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
-// 		maxZoom: 18,
-// 		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
-// 			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-// 		id: 'mapbox/streets-v11',
-// 		tileSize: 512,
-// 		zoomOffset: -1
-// 	}).addTo(mymap);
-//
-
-
 class Map {
 	constructor(centerLat, centerLon, zoom = 16) {
 		this.map = new L.Map('map', {fullscreenControl: true})
@@ -182,25 +169,7 @@ class Map {
 
 		this.map.addLayer(this.trackMarkers)
 
-		this.map.on('locationfound', this.onLocationFound);
-		this.map.on('locationerror', this.onLocationError);
-
-		this.map.locate({setView: true, maxZoom: 16});
-	}
-
-	onLocationFound(e) {
-		console.log(e)
-		console.log(this)
-		const radius = e.accuracy / 2;
-
-		L.marker(e.latlng).addTo(this)
-			.bindPopup("You are within " + radius + " meters from this point").openPopup();
-
-		L.circle(e.latlng, radius).addTo(this);
-	}
-
-	onLocationError(e) {
-		alert(e.message);
+		L.control.locate().addTo(this.map);
 	}
 }
 
