@@ -90,7 +90,7 @@ class Map {
 				+ '<select id="groupSelect" class="selectpicker" data-style="btn-success" data-width="fit">'
 				+ linkList
 				+ '</select>'
-				+ '<button class="btn btn-sm btn-outline-secondary" id="btnNext">Next</button>'
+				+ '<button class="btn btn-sm btn-outline-secondary" id="btnNext">Next...</button>'
 			div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation
 			L.DomEvent.disableClickPropagation(div)
 			return div
