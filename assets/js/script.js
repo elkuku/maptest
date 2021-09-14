@@ -2,6 +2,8 @@ class Map {
     constructor(centerLat, centerLon, zoom = 16) {
         this.map = new L.Map('map', {fullscreenControl: true})
         this.map.setView(new L.LatLng(centerLat, centerLon), zoom)
+
+        this.legend = L.control({position: 'topleft'})
         this.markers = L.markerClusterGroup({disableClusteringAtZoom: 16})
         this.trackMarkers = new L.LayerGroup()
 
@@ -25,6 +27,13 @@ class Map {
             createMarker: function () {
                 return false
             }
+        }).addTo(this.map);
+
+        this.trackLine = new L.Polyline([], {
+            color: 'blue',
+            weight: 3,
+            opacity: 0.5,
+            smoothFactor: 1
         }).addTo(this.map);
 
         this.icon = L.icon({
@@ -70,6 +79,7 @@ class Map {
     loadTrack() {
         let pointList = []
         let num = 1
+        this.trackMarkers.clearLayers()
         const trackMarkers = this.trackMarkers
         this.links.forEach(function (link) {
             pointList.push(new L.LatLng(link.lat, link.lon))
@@ -82,26 +92,25 @@ class Map {
             num++
         })
 
-        this.trackLine = new L.Polyline(pointList, {
-            color: 'blue',
-            weight: 3,
-            opacity: 0.5,
-            smoothFactor: 1
-        });
-        this.trackLine.addTo(this.map);
+        this.trackLine.setLatLngs(pointList);
     }
 
     addLegend() {
-        let linkList = ''
+        if (this.map.hasLayer(this.legend)) {
+            this.map.removeLayer(this.legend);
+        }
+
+        let linkList = '';
         let num = 1
         this.links.forEach(function (link, i) {
             linkList += '<option value="' + i + '">' + num + ' - ' + link.name + '</option>'
             num++
         })
-        let legend = L.control({position: 'topleft'})
-        legend.onAdd = function () {
+
+        this.legend.onAdd = function () {
             let div = L.DomUtil.create('div', 'info legend')
             div.innerHTML = ''
+                + '<input type="file" id="file-input" /><br>'
                 + '<button class="btn btn-sm btn-outline-secondary" id="btnFarm">Farm</button>'
                 + '<button class="btn btn-sm btn-outline-secondary" id="btnLinks">Links</button>'
                 + '<select id="groupSelect" class="selectpicker" data-style="btn-success" data-width="fit">'
@@ -113,7 +122,7 @@ class Map {
             return div
         }
 
-        legend.addTo(this.map)
+        this.legend.addTo(this.map)
 
         const self = this
         $('#groupSelect')
@@ -139,8 +148,60 @@ class Map {
             } else {
                 alert('Finished :)')
             }
-
         })
+
+        document.getElementById('file-input')
+            .addEventListener('change', this.readSingleFile.bind(this), false);
+    }
+
+    readSingleFile(e) {
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+        const reader = new FileReader();
+        const self = this
+        reader.onload = function(e) {
+            const contents = e.target.result;
+            self.displayContents(contents);
+        };
+        reader.readAsText(file);
+    }
+
+    displayContents(contents) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(contents,"text/xml");
+
+        const wpts = xmlDoc.getElementsByTagName('wpt');
+        const trackpoints = xmlDoc.getElementsByTagName('rtept');
+
+        const waypoints = []
+        const track = []
+
+        for (let i = 0; i < wpts.length; i++) {
+            waypoints.push({
+                lat: wpts[i].getAttribute("lat"),
+                lon: wpts[i].getAttribute("lon"),
+                name: wpts[i].getElementsByTagName('name')[0].innerHTML,
+                desc: wpts[i].getElementsByTagName('desc')[0].innerHTML,
+            })
+        }
+
+        for (let i = 0; i < trackpoints.length; i++) {
+            track.push({
+                lat: trackpoints[i].getAttribute("lat"),
+                lon: trackpoints[i].getAttribute("lon"),
+                name: trackpoints[i].getElementsByTagName('name')[0].innerHTML,
+                desc: trackpoints[i].getElementsByTagName('desc')[0].innerHTML,
+            })
+        }
+
+        const maxfield =  {
+            wayPoints: waypoints,
+            links: track,
+        }
+
+        this.displayMaxFieldData(maxfield)
     }
 
     toggleMarkers() {
@@ -212,12 +273,9 @@ class Map {
     }
 
     onLocationFound(e) {
-        console.log(e)
-        console.log(this.destination)
         this.userPosition = e;
         if (this.destination) {
             this.userDestLine.setLatLngs([e.latlng, this.destination])
-
         }
     }
 }
