@@ -12,5 +12,6 @@
     <orderEntry type="library" name="leaflet.markercluster" level="application" />
     <orderEntry type="library" name="jquery-3.6.0" level="application" />
     <orderEntry type="library" name="leaflet.locatecontrol" level="application" />
+    <orderEntry type="library" name="leaflet-routing-machine" level="application" />
   </component>
 </module>
