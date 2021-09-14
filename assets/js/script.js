@@ -3,13 +3,19 @@ class Map {
         this.map = new L.Map('map', {fullscreenControl: true})
         this.map.setView(new L.LatLng(centerLat, centerLon), zoom)
 
-        this.legend = L.control({position: 'topleft'})
+        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        const osmAttrib = 'Map data (C) <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+        const osm = new L.TileLayer(osmUrl, {attribution: osmAttrib})
+
+        this.map.addLayer(osm)
+
+        this.legend = L.control({position: 'bottomleft'})
         this.markers = L.markerClusterGroup({disableClusteringAtZoom: 16})
         this.trackMarkers = new L.LayerGroup()
 
         this.links = []
 
-        this.destinationMarker = null
+        this.destinationMarker = L.marker([0, 0]).addTo(this.map)
         this.trackLine = null
 
         this.userPosition = null
@@ -43,7 +49,16 @@ class Map {
             popupAnchor: [0, -18],
         })
 
-        this._initMap()
+        this.map.addLayer(this.trackMarkers)
+
+        L.control.locate({
+            keepCurrentZoomLevel: true,
+            locateOptions: {
+                enableHighAccuracy: true
+            }
+        }).addTo(this.map);
+
+        this.map.on('locationfound', this.onLocationFound.bind(this));
     }
 
     displayMaxFieldData(maxField) {
@@ -111,12 +126,12 @@ class Map {
             let div = L.DomUtil.create('div', 'info legend')
             div.innerHTML = ''
                 + '<input type="file" id="file-input" /><br>'
-                + '<button class="btn btn-sm btn-outline-secondary" id="btnFarm">Farm</button>'
-                + '<button class="btn btn-sm btn-outline-secondary" id="btnLinks">Links</button>'
-                + '<select id="groupSelect" class="selectpicker" data-style="btn-success" data-width="fit">'
+                + '<button class="layerSelected" id="btnFarm">Farm</button>'
+                + '<button class="layerSelected" id="btnLinks">Links</button>'
+                + '<select id="groupSelect">'
                 + linkList
                 + '</select>'
-                + '<button class="btn btn-sm btn-outline-secondary" id="btnNext">Next...</button>'
+                + '<button id="btnNext">Next...</button>'
             div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation
             L.DomEvent.disableClickPropagation(div)
             return div
@@ -133,9 +148,11 @@ class Map {
 
         $('#btnFarm').on('click', function () {
             self.toggleMarkers()
+            $(this).toggleClass('layerSelected')
         })
         $('#btnLinks').on('click', function () {
             self.toggleTrack()
+            $(this).toggleClass('layerSelected')
         })
         $('#btnNext').on('click', function () {
             const select = $('#groupSelect')
@@ -163,12 +180,12 @@ class Map {
         const self = this
         reader.onload = function(e) {
             const contents = e.target.result;
-            self.displayContents(contents);
+            self.parseGpx(contents);
         };
         reader.readAsText(file);
     }
 
-    displayContents(contents) {
+    parseGpx(contents) {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(contents,"text/xml");
 
@@ -224,23 +241,14 @@ class Map {
 
     showDestination(id) {
         const destination = this.links[id]
-        const center = new L.LatLng(destination.lat, destination.lon)
+        this.destination = new L.LatLng(destination.lat, destination.lon)
 
-        this.destination = center
-        this.map.panTo(center)
+        this.map.panTo(this.destination)
 
         const description = destination.desc.replace(/\*BR\*/g, '<br/>')
 
-        if (this.destinationMarker) {
-            this.destinationMarker.setLatLng(center)
-                .bindPopup('<b>' + destination.name + '</b><br>' + description)
-        } else {
-            this.destinationMarker = L.marker([destination.lat, destination.lon], {
-                // icon: this.icon
-            })
-                .bindPopup('<b>' + destination.name + '</b><br>' + description)
-                .addTo(this.map)
-        }
+        this.destinationMarker.setLatLng(this.destination)
+            .bindPopup('<b>' + destination.name + '</b><br>' + description)
 
         // Routing
         if (id > 0) {
@@ -250,26 +258,6 @@ class Map {
                 L.latLng(destination.lat, destination.lon)
             ])
         }
-    }
-
-    _initMap() {
-        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-        const osmAttrib = 'Map data (C) <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-        const osm = new L.TileLayer(osmUrl, {attribution: osmAttrib})
-
-        this.map.addLayer(osm)
-
-        this.map.addLayer(this.trackMarkers)
-
-        L.control.locate({
-            keepCurrentZoomLevel: true,
-            locateOptions: {
-                enableHighAccuracy: true
-            }
-        }).addTo(this.map);
-
-
-        this.map.on('locationfound', this.onLocationFound.bind(this));
     }
 
     onLocationFound(e) {

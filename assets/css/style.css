@@ -13,3 +13,7 @@ html, body {
     color: blue;
     font-size: 1.3em;
 }
+
+button.layerSelected{
+    color: orange;
+}
