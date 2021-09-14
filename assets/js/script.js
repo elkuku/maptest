@@ -1,186 +1,225 @@
 class Map {
-	constructor(centerLat, centerLon, zoom = 16) {
-		this.map = new L.Map('map', {fullscreenControl: true})
-		this.map.setView(new L.LatLng(centerLat, centerLon), zoom)
-		this.markers = L.markerClusterGroup({disableClusteringAtZoom: 16})
-		this.trackMarkers = new L.LayerGroup()
+    constructor(centerLat, centerLon, zoom = 16) {
+        this.map = new L.Map('map', {fullscreenControl: true})
+        this.map.setView(new L.LatLng(centerLat, centerLon), zoom)
+        this.markers = L.markerClusterGroup({disableClusteringAtZoom: 16})
+        this.trackMarkers = new L.LayerGroup()
 
-		this.links = []
+        this.links = []
 
-		this.destinationMarker = null
-		this.trackLine = null
+        this.destinationMarker = null
+        this.trackLine = null
 
-		this.routingControl =  L.Routing.control({createMarker: function(){return false}}).addTo(this.map);
+        this.userPosition = null
+        this.destination = null
+        this.userDestLine = new L.Polyline([], {
+            color: 'blue',
+            weight: 3,
+            opacity: 0.5,
+            smoothFactor: 1
+        }).addTo(this.map);
 
-		this.icon = L.icon({
-			iconUrl: '/build/images/my-icon.png',
-			iconSize: [22, 36],
-			iconAnchor: [11, 36],
-			popupAnchor: [0, -18],
-		})
+        this.routingControl = L.Routing.control({
+            // stepToText: function(){return L.spanish},
+            fitSelectedRoutes: false,
+            createMarker: function () {
+                return false
+            }
+        }).addTo(this.map);
 
-		this._initMap()
-	}
+        this.icon = L.icon({
+            iconUrl: '/build/images/my-icon.png',
+            iconSize: [22, 36],
+            iconAnchor: [11, 36],
+            popupAnchor: [0, -18],
+        })
 
-	displayMaxFieldData(maxField) {
-		this.links = maxField.links
+        this._initMap()
+    }
 
-		this.loadMarkers(maxField.wayPoints)
-		this.loadTrack()
+    displayMaxFieldData(maxField) {
+        this.links = maxField.links
 
-		this.showDestination(0)
+        this.loadMarkers(maxField.wayPoints)
+        this.loadTrack()
 
-		this.addLegend()
-	}
+        this.showDestination(0)
 
-	loadMarkers(markerObjects) {
-		// const icon = this.icon
-		this.markers.clearLayers()
+        this.addLegend()
+    }
 
-		const markers = this.markers
-		const map = this.map
-		markerObjects.forEach(function (o) {
-			let marker =
-				new L.Marker(
-					new L.LatLng(o.lat, o.lon),
-					{
-						// icon: icon
-					}
-				).bindPopup('<b>' + o.name + '</b><br>' + o.desc)
-			markers.addLayer(marker)
-			map.addLayer(markers)
-		})
-	}
+    loadMarkers(markerObjects) {
+        // const icon = this.icon
+        this.markers.clearLayers()
 
-	loadTrack() {
-		let pointList = []
-		let num = 1
-		const trackMarkers = this.trackMarkers
-		this.links.forEach(function (link) {
-			pointList.push(new L.LatLng(link.lat, link.lon))
-			new L.Marker([link.lat, link.lon], {
-				icon: new L.DivIcon({
-					className: 'my-div-icon',
-					html: '<h4>'+num+'</h4>'
-				})
-			}).addTo(trackMarkers);
-			num ++
-		})
+        const markers = this.markers
+        const map = this.map
+        markerObjects.forEach(function (o) {
+            let marker =
+                new L.Marker(
+                    new L.LatLng(o.lat, o.lon),
+                    {
+                        // icon: icon
+                    }
+                ).bindPopup('<b>' + o.name + '</b><br>' + o.desc)
+            markers.addLayer(marker)
+            map.addLayer(markers)
+        })
+    }
 
-		this.trackLine = new L.Polyline(pointList, {
-			color: 'blue',
-			weight: 3,
-			opacity: 0.5,
-			smoothFactor: 1
-		});
-		this.trackLine.addTo(this.map);
-	}
+    loadTrack() {
+        let pointList = []
+        let num = 1
+        const trackMarkers = this.trackMarkers
+        this.links.forEach(function (link) {
+            pointList.push(new L.LatLng(link.lat, link.lon))
+            new L.Marker([link.lat, link.lon], {
+                icon: new L.DivIcon({
+                    className: 'my-div-icon',
+                    html: '<h4>' + num + '</h4>'
+                })
+            }).addTo(trackMarkers);
+            num++
+        })
 
-	addLegend() {
-		let linkList = ''
-		let num = 1
-		this.links.forEach(function (link, i) {
-			linkList += '<option value="' + i + '">' + num + ' - ' + link.name + '</option>'
-			num ++
-		})
-		let legend = L.control({position: 'topleft'})
-		legend.onAdd = function () {
-			let div = L.DomUtil.create('div', 'info legend')
-			div.innerHTML =''
-				+ '<button class="btn btn-sm btn-outline-secondary" id="btnFarm">Farm</button>'
-				+ '<button class="btn btn-sm btn-outline-secondary" id="btnLinks">Links</button>'
-				+ '<select id="groupSelect" class="selectpicker" data-style="btn-success" data-width="fit">'
-				+ linkList
-				+ '</select>'
-				+ '<button class="btn btn-sm btn-outline-secondary" id="btnNext">Next...</button>'
-			div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation
-			L.DomEvent.disableClickPropagation(div)
-			return div
-		}
+        this.trackLine = new L.Polyline(pointList, {
+            color: 'blue',
+            weight: 3,
+            opacity: 0.5,
+            smoothFactor: 1
+        });
+        this.trackLine.addTo(this.map);
+    }
 
-		legend.addTo(this.map)
+    addLegend() {
+        let linkList = ''
+        let num = 1
+        this.links.forEach(function (link, i) {
+            linkList += '<option value="' + i + '">' + num + ' - ' + link.name + '</option>'
+            num++
+        })
+        let legend = L.control({position: 'topleft'})
+        legend.onAdd = function () {
+            let div = L.DomUtil.create('div', 'info legend')
+            div.innerHTML = ''
+                + '<button class="btn btn-sm btn-outline-secondary" id="btnFarm">Farm</button>'
+                + '<button class="btn btn-sm btn-outline-secondary" id="btnLinks">Links</button>'
+                + '<select id="groupSelect" class="selectpicker" data-style="btn-success" data-width="fit">'
+                + linkList
+                + '</select>'
+                + '<button class="btn btn-sm btn-outline-secondary" id="btnNext">Next...</button>'
+            div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation
+            L.DomEvent.disableClickPropagation(div)
+            return div
+        }
 
-		const self = this
-		$('#groupSelect')
-			.on('change', function () {
-				self.showDestination($(this)
-					.val())
-			})
+        legend.addTo(this.map)
 
-		$('#btnFarm').on('click', function () {
-			self.toggleMarkers()
-		})
-		$('#btnLinks').on('click', function () {
-			self.toggleTrack()
-		})
-		$('#btnNext').on('click', function () {
-			const select = $('#groupSelect')
-			const length = $('#groupSelect option').length
-			if (select.val() < length) {
-				const newVal = parseInt(select.val())+1
-				self.showDestination(newVal)
+        const self = this
+        $('#groupSelect')
+            .on('change', function () {
+                self.showDestination($(this)
+                    .val())
+            })
 
-				select.val(newVal)
-			}
-		})
-	}
+        $('#btnFarm').on('click', function () {
+            self.toggleMarkers()
+        })
+        $('#btnLinks').on('click', function () {
+            self.toggleTrack()
+        })
+        $('#btnNext').on('click', function () {
+            const select = $('#groupSelect')
+            const length = $('#groupSelect option').length
+            if (select.val() < length - 1) {
+                const newVal = parseInt(select.val()) + 1;
+                self.showDestination(newVal);
 
-	toggleMarkers() {
-		if (this.map.hasLayer(this.markers)) {
-			this.map.removeLayer(this.markers)
-		} else {
-			this.map.addLayer(this.markers)
-		}
-	}
+                select.val(newVal);
+            } else {
+                alert('Finished :)')
+            }
 
-	toggleTrack() {
-		if (this.map.hasLayer(this.trackLine)) {
-			this.map.removeLayer(this.trackLine)
-			this.map.removeLayer(this.trackMarkers)
-		} else {
-			this.map.addLayer(this.trackLine)
-			this.map.addLayer(this.trackMarkers)
-		}
-	}
+        })
+    }
 
-	showDestination(id) {
-		const destination = this.links[id]
-		const center = new L.LatLng(destination.lat, destination.lon)
-		this.map.panTo(center)
+    toggleMarkers() {
+        if (this.map.hasLayer(this.markers)) {
+            this.map.removeLayer(this.markers)
+        } else {
+            this.map.addLayer(this.markers)
+        }
+    }
 
-		const description = destination.desc.replace(/\*BR\*/g, '<br/>')
+    toggleTrack() {
+        if (this.map.hasLayer(this.trackLine)) {
+            this.map.removeLayer(this.trackLine)
+            this.map.removeLayer(this.trackMarkers)
+        } else {
+            this.map.addLayer(this.trackLine)
+            this.map.addLayer(this.trackMarkers)
+        }
+    }
 
-		if (this.destinationMarker) {
-			this.destinationMarker.setLatLng(center)
-				.bindPopup('<b>' + destination.name + '</b><br>' +description)
-		} else {
-			this.destinationMarker = L.marker([destination.lat, destination.lon], {
-				// icon: this.icon
-			})
-				.bindPopup('<b>' + destination.name + '</b><br>' + description)
-				.addTo(this.map)
-		}
+    showDestination(id) {
+        const destination = this.links[id]
+        const center = new L.LatLng(destination.lat, destination.lon)
 
-		if (id > 0) {
-			const previous = this.links[id-1]
-			this.routingControl.setWaypoints([
-				L.latLng(previous.lat, previous.lon),
-				L.latLng(destination.lat, destination.lon)
-			])
-		}
-	}
+        this.destination = center
+        this.map.panTo(center)
 
-	_initMap() {
-		const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-		const osmAttrib = 'Map data (C) <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-		const osm = new L.TileLayer(osmUrl, {attribution: osmAttrib})
+        const description = destination.desc.replace(/\*BR\*/g, '<br/>')
 
-		this.map.addLayer(osm)
+        if (this.destinationMarker) {
+            this.destinationMarker.setLatLng(center)
+                .bindPopup('<b>' + destination.name + '</b><br>' + description)
+        } else {
+            this.destinationMarker = L.marker([destination.lat, destination.lon], {
+                // icon: this.icon
+            })
+                .bindPopup('<b>' + destination.name + '</b><br>' + description)
+                .addTo(this.map)
+        }
 
-		this.map.addLayer(this.trackMarkers)
+        // Routing
+        if (id > 0) {
+            const previous = this.links[id - 1]
+            this.routingControl.setWaypoints([
+                L.latLng(previous.lat, previous.lon),
+                L.latLng(destination.lat, destination.lon)
+            ])
+        }
+    }
 
-		L.control.locate().addTo(this.map);
-	}
+    _initMap() {
+        const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        const osmAttrib = 'Map data (C) <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+        const osm = new L.TileLayer(osmUrl, {attribution: osmAttrib})
+
+        this.map.addLayer(osm)
+
+        this.map.addLayer(this.trackMarkers)
+
+        L.control.locate({
+            keepCurrentZoomLevel: true,
+            locateOptions: {
+                enableHighAccuracy: true
+            }
+        }).addTo(this.map);
+
+
+        this.map.on('locationfound', this.onLocationFound.bind(this));
+    }
+
+    onLocationFound(e) {
+        console.log(e)
+        console.log(this.destination)
+        this.userPosition = e;
+        if (this.destination) {
+            this.userDestLine.setLatLngs([e.latlng, this.destination])
+
+        }
+    }
 }
 
 let lat = -1.262326
