@@ -9,7 +9,7 @@ html, body {
     width: 100vw;
 }
 
-.my-div-icon h4{
+.link-layer h4{
     color: blue;
     font-size: 1.4em;
 }
@@ -19,12 +19,8 @@ html, body {
     font-size: 1.6em;
 }
 
-button.layerSelected{
-    color: orange;
-}
-
-button#btnNext{
-    background-color: #4CAF50; /* Green */
+button#btnNext {
+    background-color: green;
     border: 1px solid green;
     color: white;
     padding: 8px 16px;
@@ -52,5 +48,4 @@ button#btnNext:hover {
     border: 3px solid #000;
     color: #000;
     text-align: center;
-    /*font: 32px Arial, sans-serif;*/
 }

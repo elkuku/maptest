@@ -52,9 +52,12 @@ class Map {
         this.destinationMarker = L.marker([0, 0]).bindPopup('Please load a GPX file...')
         this.userDestinationLine = new L.Polyline([], {
             color: 'blue',
-            weight: 3,
-            opacity: 0.5,
-            smoothFactor: 1
+            dashArray: '5, 15',
+        })
+
+        this.originDestinationLine = new L.Polyline([], {
+            color: 'red',
+            dashArray: '5, 15',
         })
 
         // Locate control
@@ -78,6 +81,7 @@ class Map {
 
         this.destinationMarker.addTo(this.map)
         this.userDestinationLine.addTo(this.map)
+        this.originDestinationLine.addTo(this.map)
     }
 
     addFileInputControl() {
@@ -188,7 +192,7 @@ class Map {
 
             new L.Marker([link.lat, link.lon], {
                 icon: new L.DivIcon({
-                    className: 'my-div-icon',
+                    className: 'link-layer',
                     html: '<b class="circle">' + num + '</b>'
                 })
             })
@@ -271,10 +275,12 @@ class Map {
         // Routing
         if (id > 0) {
             const previous = this.links[id - 1]
-            this.routingControl.setWaypoints([
+            const points = [
                 L.latLng(previous.lat, previous.lon),
                 L.latLng(destination.lat, destination.lon)
-            ])
+            ]
+            this.originDestinationLine.setLatLngs(points)
+            this.routingControl.setWaypoints(points)
         }
     }
 
