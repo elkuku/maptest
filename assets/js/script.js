@@ -163,7 +163,6 @@ class Map {
     loadFarmLayer(markerObjects) {
         this.farmLayer.clearLayers()
 
-        const markers = this.farmLayer
         markerObjects.forEach(function (o) {
             const num = o.desc.replace('Farm keys:', '')
             let marker =
@@ -176,8 +175,8 @@ class Map {
                         })
                     }
                 ).bindPopup('<b>' + o.name + '</b><br>' + o.desc)
-            markers.addLayer(marker)
-        })
+            this.farmLayer.addLayer(marker)
+        }.bind(this))
 
         this.map.fitBounds(this.farmLayer.getBounds());
     }
