@@ -200,12 +200,7 @@ class Map {
             num++
         }.bind(this))
 
-        L.polyline(pointList, {
-            color: 'blue',
-            weight: 3,
-            opacity: 0.5,
-            smoothFactor: 1
-        }).addTo(this.linkLayer);
+        L.polyline(pointList, {color: 'blue'}).addTo(this.linkLayer);
     }
 
     addLinkSelector(links) {
