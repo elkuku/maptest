@@ -1,56 +1,63 @@
 class Map {
-    constructor(centerLat, centerLon, zoom = 16) {
-        this.map = new L.Map('map', {fullscreenControl: true})
-        this.map.setView(new L.LatLng(centerLat, centerLon), zoom)
-
+    constructor(mapId, centerLat = 0, centerLon = 0, zoom = 3) {
         const osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
         const osmAttrib = 'Map data (C) <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-        const osm = new L.TileLayer(osmUrl, {attribution: osmAttrib})
 
-        this.map.addLayer(osm)
+        const mbAttr = 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
+                'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            mbUrl = 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
 
-        this.legend = L.control({position: 'bottomleft'})
-        this.markers = L.markerClusterGroup({disableClusteringAtZoom: 16})
-        this.trackMarkers = new L.LayerGroup()
+        const grayscale = L.tileLayer(mbUrl, {
+                id: 'mapbox/light-v9',
+                tileSize: 512,
+                zoomOffset: -1,
+                attribution: mbAttr
+            }),
+            streets = L.tileLayer(mbUrl, {
+                id: 'mapbox/streets-v11',
+                tileSize: 512,
+                zoomOffset: -1,
+                attribution: mbAttr
+            }),
+            OSM = L.tileLayer(osmUrl, {attribution: osmAttrib});
 
+        this.farmLayer = new L.FeatureGroup()
+        this.linkLayer = new L.LayerGroup()
         this.links = []
 
-        this.destinationMarker = L.marker([0, 0]).addTo(this.map)
-        this.trackLine = null
+        this.map = L.map(mapId, {
+            center: [centerLat, centerLon],
+            zoom: zoom,
+            layers: [grayscale, this.farmLayer, this.linkLayer],
+            fullscreenControl: true
+        });
 
-        this.userPosition = null
-        this.destination = null
-        this.userDestLine = new L.Polyline([], {
+        this.addFileInputControl()
+
+        const baseLayers = {
+            "Grayscale": grayscale,
+            "Streets": streets,
+            "OSM": OSM
+        };
+
+        const overlays = {
+            "Farm": this.farmLayer,
+            "Links": this.linkLayer,
+        };
+
+        L.control.layers(baseLayers, overlays).addTo(this.map);
+
+        this.linkSelector = L.control({position: 'bottomleft'})
+
+        this.destinationMarker = L.marker([0, 0]).bindPopup('Please load a GPX file...')
+        this.userDestinationLine = new L.Polyline([], {
             color: 'blue',
             weight: 3,
             opacity: 0.5,
             smoothFactor: 1
-        }).addTo(this.map);
-
-        this.routingControl = L.Routing.control({
-            // stepToText: function(){return L.spanish},
-            fitSelectedRoutes: false,
-            createMarker: function () {
-                return false
-            }
-        }).addTo(this.map);
-
-        this.trackLine = new L.Polyline([], {
-            color: 'blue',
-            weight: 3,
-            opacity: 0.5,
-            smoothFactor: 1
-        }).addTo(this.map);
-
-        this.icon = L.icon({
-            iconUrl: '/build/images/my-icon.png',
-            iconSize: [22, 36],
-            iconAnchor: [11, 36],
-            popupAnchor: [0, -18],
         })
 
-        this.map.addLayer(this.trackMarkers)
-
+        // Locate control
         L.control.locate({
             keepCurrentZoomLevel: true,
             locateOptions: {
@@ -59,113 +66,32 @@ class Map {
         }).addTo(this.map);
 
         this.map.on('locationfound', this.onLocationFound.bind(this));
+
+        // Routing control
+        this.routingControl = L.Routing.control({
+            // stepToText: function(){return L.spanish},
+            fitSelectedRoutes: false,
+            createMarker: function () {
+                return false
+            }
+        }).addTo(this.map);
+
+        this.destinationMarker.addTo(this.map)
+        this.userDestinationLine.addTo(this.map)
     }
 
-    displayMaxFieldData(maxField) {
-        this.links = maxField.links
+    addFileInputControl() {
+        const legend = L.control({position: 'topright'})
 
-        this.loadMarkers(maxField.wayPoints)
-        this.loadTrack()
-
-        this.showDestination(0)
-
-        this.addLegend()
-    }
-
-    loadMarkers(markerObjects) {
-        // const icon = this.icon
-        this.markers.clearLayers()
-
-        const markers = this.markers
-        const map = this.map
-        markerObjects.forEach(function (o) {
-            let marker =
-                new L.Marker(
-                    new L.LatLng(o.lat, o.lon),
-                    {
-                        // icon: icon
-                    }
-                ).bindPopup('<b>' + o.name + '</b><br>' + o.desc)
-            markers.addLayer(marker)
-            map.addLayer(markers)
-        })
-    }
-
-    loadTrack() {
-        let pointList = []
-        let num = 1
-        this.trackMarkers.clearLayers()
-        const trackMarkers = this.trackMarkers
-        this.links.forEach(function (link) {
-            pointList.push(new L.LatLng(link.lat, link.lon))
-            new L.Marker([link.lat, link.lon], {
-                icon: new L.DivIcon({
-                    className: 'my-div-icon',
-                    html: '<h4>' + num + '</h4>'
-                })
-            }).addTo(trackMarkers);
-            num++
-        })
-
-        this.trackLine.setLatLngs(pointList);
-    }
-
-    addLegend() {
-        if (this.map.hasLayer(this.legend)) {
-            this.map.removeLayer(this.legend);
-        }
-
-        let linkList = '';
-        let num = 1
-        this.links.forEach(function (link, i) {
-            linkList += '<option value="' + i + '">' + num + ' - ' + link.name + '</option>'
-            num++
-        })
-
-        this.legend.onAdd = function () {
+        legend.onAdd = function () {
             let div = L.DomUtil.create('div', 'info legend')
-            div.innerHTML = ''
-                + '<input type="file" id="file-input" /><br>'
-                + '<button class="layerSelected" id="btnFarm">Farm</button>'
-                + '<button class="layerSelected" id="btnLinks">Links</button>'
-                + '<select id="groupSelect">'
-                + linkList
-                + '</select>'
-                + '<button id="btnNext">Next...</button>'
+            div.innerHTML = '<input type="file" id="file-input" /><br>'
             div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation
             L.DomEvent.disableClickPropagation(div)
             return div
         }
 
-        this.legend.addTo(this.map)
-
-        const self = this
-        $('#groupSelect')
-            .on('change', function () {
-                self.showDestination($(this)
-                    .val())
-            })
-
-        $('#btnFarm').on('click', function () {
-            self.toggleMarkers()
-            $(this).toggleClass('layerSelected')
-        })
-        $('#btnLinks').on('click', function () {
-            self.toggleTrack()
-            $(this).toggleClass('layerSelected')
-        })
-        $('#btnNext').on('click', function () {
-            const select = $('#groupSelect')
-            const length = $('#groupSelect option').length
-            if (select.val() < length - 1) {
-                const newVal = parseInt(select.val()) + 1;
-                self.showDestination(newVal);
-
-                select.val(newVal);
-            } else {
-                alert('Finished :)')
-            }
-        })
+        legend.addTo(this.map)
 
         document.getElementById('file-input')
             .addEventListener('change', this.readSingleFile.bind(this), false);
@@ -178,7 +104,7 @@ class Map {
         }
         const reader = new FileReader();
         const self = this
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const contents = e.target.result;
             self.parseGpx(contents);
         };
@@ -187,7 +113,7 @@ class Map {
 
     parseGpx(contents) {
         const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(contents,"text/xml");
+        const xmlDoc = parser.parseFromString(contents, "text/xml");
 
         const wpts = xmlDoc.getElementsByTagName('wpt');
         const trackpoints = xmlDoc.getElementsByTagName('rtept');
@@ -213,7 +139,7 @@ class Map {
             })
         }
 
-        const maxfield =  {
+        const maxfield = {
             wayPoints: waypoints,
             links: track,
         }
@@ -221,26 +147,118 @@ class Map {
         this.displayMaxFieldData(maxfield)
     }
 
-    toggleMarkers() {
-        if (this.map.hasLayer(this.markers)) {
-            this.map.removeLayer(this.markers)
-        } else {
-            this.map.addLayer(this.markers)
-        }
+    displayMaxFieldData(maxField) {
+        this.links = maxField.links
+
+        this.loadFarmLayer(maxField.wayPoints)
+        this.loadLinkLayer()
+
+        this.addLinkSelector()
     }
 
-    toggleTrack() {
-        if (this.map.hasLayer(this.trackLine)) {
-            this.map.removeLayer(this.trackLine)
-            this.map.removeLayer(this.trackMarkers)
-        } else {
-            this.map.addLayer(this.trackLine)
-            this.map.addLayer(this.trackMarkers)
+    loadFarmLayer(markerObjects) {
+        this.farmLayer.clearLayers()
+
+        const markers = this.farmLayer
+        markerObjects.forEach(function (o) {
+            const num = o.desc.replace('Farm keys:', '')
+            let marker =
+                new L.Marker(
+                    new L.LatLng(o.lat, o.lon),
+                    {
+                        icon: new L.DivIcon({
+                            className: 'farm-layer',
+                            html: '<b class="circle">' + num + '</b>'
+                        })
+                    }
+                ).bindPopup('<b>' + o.name + '</b><br>' + o.desc)
+            markers.addLayer(marker)
+        })
+
+        this.map.fitBounds(this.farmLayer.getBounds());
+    }
+
+    loadLinkLayer() {
+        let pointList = []
+        let num = 1
+        this.linkLayer.clearLayers()
+        this.links.forEach(function (link) {
+            pointList.push(new L.LatLng(link.lat, link.lon))
+            const description = link.desc.replace(/\*BR\*/g, '<br/>')
+
+            new L.Marker([link.lat, link.lon], {
+                icon: new L.DivIcon({
+                    className: 'my-div-icon',
+                    html: '<b class="circle">' + num + '</b>'
+                })
+            })
+                .bindPopup('<b>' + link.name + '</b><br/>' + description)
+                .addTo(this.linkLayer);
+            num++
+        }.bind(this))
+
+        L.polyline(pointList, {
+            color: 'blue',
+            weight: 3,
+            opacity: 0.5,
+            smoothFactor: 1
+        }).addTo(this.linkLayer);
+    }
+
+    addLinkSelector(links) {
+        if (this.map.hasLayer(this.linkSelector)) {
+            this.map.removeLayer(this.linkSelector);
         }
+
+        let linkList = '<option value="-1">Start...</option>'
+        let num = 1
+        this.links.forEach(function (link, i) {
+            linkList += '<option value="' + i + '">' + num + ' - ' + link.name + '</option>'
+            num++
+        })
+
+        this.linkSelector.onAdd = function () {
+            let div = L.DomUtil.create('div', 'info legend')
+            div.innerHTML = ''
+                + '<button id="btnNext">Next...</button>'
+                + '<select id="groupSelect">'
+                + linkList
+                + '</select>'
+            div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation
+            L.DomEvent.disableClickPropagation(div)
+            return div
+        }
+
+        this.linkSelector.addTo(this.map)
+
+        $('#groupSelect')
+            .on('change', function (e) {
+                this.showDestination($(e.target).val())
+            }.bind(this))
+
+        $('#btnNext').on('click', function () {
+            const select = $('#groupSelect')
+            const length = $('#groupSelect option').length
+            if (select.val() < length - 2) {
+                const newVal = parseInt(select.val()) + 1;
+                this.showDestination(newVal);
+
+                select.val(newVal);
+            } else {
+                alert('Finished :)')
+            }
+        }.bind(this))
     }
 
     showDestination(id) {
-        const destination = this.links[id]
+        if (id < 0) {
+            this.destinationMarker.setLatLng([0, 0])
+                .bindPopup('')
+            this.destination = null
+            return
+        }
+
+        const destination = this.links[id];
         this.destination = new L.LatLng(destination.lat, destination.lon)
 
         this.map.panTo(this.destination)
@@ -261,16 +279,10 @@ class Map {
     }
 
     onLocationFound(e) {
-        this.userPosition = e;
         if (this.destination) {
-            this.userDestLine.setLatLngs([e.latlng, this.destination])
+            this.userDestinationLine.setLatLngs([e.latlng, this.destination])
         }
     }
 }
 
-let lat = -1.262326
-let lon = -79.09357
-
-const map = new Map(lat, lon)
-
-map.displayMaxFieldData($('#jsData').data('maxfield'))
+const map = new Map('map')
