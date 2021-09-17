@@ -286,3 +286,5 @@ class Map {
 }
 
 const map = new Map('map')
+
+map.displayMaxFieldData($('#jsData').data('maxfield'))
