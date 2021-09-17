@@ -37,4 +37,12 @@ Press "Next"
 # Setup
 Download the thing and open index.html in your browser or visit https://elkuku.github.io/maptest/
 
-hF =;)
+## Credits:
+
+* https://github.com/tvwenger/maxfield
+
+## Hot to create the GPX file
+
+TBD...
+
+hF `=;)`
