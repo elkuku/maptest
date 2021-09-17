@@ -31,6 +31,6 @@ Press "Next"
 
 
 # Setup
-Download the thing and open index.html in yor browser or visit https://elkuku.github.io/maptest/
+Download the thing and open index.html in your browser or visit https://elkuku.github.io/maptest/
 
 hF =;)
