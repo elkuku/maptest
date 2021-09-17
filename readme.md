@@ -29,6 +29,10 @@ Press "Next"
 ## Experimental routing and user location feature
 ![photo_2021-09-17_13-18-26](https://user-images.githubusercontent.com/33978/133835848-79038912-66d0-4ec9-a621-670ddf5ac52b.jpg)
 
+## Result
+
+![link_map](https://user-images.githubusercontent.com/33978/133838929-2d2e434a-8449-49df-acb4-867ed81dd71a.png)
+![photo_2021-09-17_13-51-37](https://user-images.githubusercontent.com/33978/133839387-318c389a-67c6-4492-a6ba-5af3d90ab018.jpg)
 
 # Setup
 Download the thing and open index.html in your browser or visit https://elkuku.github.io/maptest/
