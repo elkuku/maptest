@@ -1,24 +1,26 @@
 ## Maxfield Navigator
 
-The execution of a maxfield is usually a two-step process:
+This is used to execute a plan created by https://www.ingress-maxfield.com/ for a game called  [Ingress](https://ingress.com/).
+
+The execution of a maxfield plan is usually a two-step process:
 
 1. Deploy resonators (and mods) on all portals and farm the necessary keys for the maxfield.
 2. Link the portals to create the maxfield.
 
-Step 1
-Activate only the "Farm" layer, visit every portal, deploy and farm.
+## Step 1: Farm
 
-Step 2
+Activate only the "Farm" layer, visit every portal, deploy and farm the amount of keys as indicated.
+
+![photo_2021-09-17_13-17-11](https://user-images.githubusercontent.com/33978/133835733-8ecb8717-afd5-4b9e-8779-6f115569d22f.jpg)
+
+## Step 2: Link
+
 Activate only the "Link" layer, visit the portals starting from "1" and perform the links as indicated by the marker popup
 
 OR
 
-Deactivate all layers and use the "Next" button with experimental routing.
+Deactivate all layers and use the "Next" button.
 
-## Farm layer
-![photo_2021-09-17_13-17-11](https://user-images.githubusercontent.com/33978/133835733-8ecb8717-afd5-4b9e-8779-6f115569d22f.jpg)
-
-## Links layer
 ![photo_2021-09-17_13-18-04](https://user-images.githubusercontent.com/33978/133835796-77c768a2-8373-4e65-a032-58b47e904f18.jpg)
 
 ## No layers
@@ -44,5 +46,11 @@ Download the thing and open index.html in your browser or visit https://elkuku.g
 ## Hot to create the GPX file
 
 TBD...
+
+# NOTE
+
+This uses a demo API key to display the map and a demo server for routing / do not use in production  :D
+
+----
 
 hF `=;)`
