@@ -21,8 +21,8 @@ class Map {
             }),
             OSM = L.tileLayer(osmUrl, {attribution: osmAttrib});
 
-        this.farmLayer = new L.FeatureGroup()
-        this.linkLayer = new L.LayerGroup()
+        this.farmLayer = L.featureGroup()
+        this.linkLayer = L.layerGroup()
         this.links = []
 
         this.map = L.map(mapId, {
@@ -50,12 +50,13 @@ class Map {
         this.linkSelector = L.control({position: 'bottomleft'})
 
         this.destinationMarker = L.marker([0, 0]).bindPopup('Please load a GPX file...')
-        this.userDestinationLine = new L.Polyline([], {
+
+        this.userDestinationLine = L.polyline([], {
             color: 'blue',
             dashArray: '5, 15',
         })
 
-        this.originDestinationLine = new L.Polyline([], {
+        this.originDestinationLine = L.polyline([], {
             color: 'red',
             dashArray: '5, 15',
         })
@@ -166,10 +167,10 @@ class Map {
         markerObjects.forEach(function (o) {
             const num = o.desc.replace('Farm keys:', '')
             let marker =
-                new L.Marker(
-                    new L.LatLng(o.lat, o.lon),
+                L.marker(
+                    L.latLng(o.lat, o.lon),
                     {
-                        icon: new L.DivIcon({
+                        icon: L.divIcon({
                             className: 'farm-layer',
                             html: '<b class="circle">' + num + '</b>'
                         })
@@ -186,11 +187,11 @@ class Map {
         let num = 1
         this.linkLayer.clearLayers()
         this.links.forEach(function (link) {
-            pointList.push(new L.LatLng(link.lat, link.lon))
+            pointList.push(L.latLng(link.lat, link.lon))
             const description = link.desc.replace(/\*BR\*/g, '<br/>')
 
-            new L.Marker([link.lat, link.lon], {
-                icon: new L.DivIcon({
+            L.marker([link.lat, link.lon], {
+                icon: L.divIcon({
                     className: 'link-layer',
                     html: '<b class="circle">' + num + '</b>'
                 })
@@ -253,18 +254,26 @@ class Map {
             this.destinationMarker.setLatLng([0, 0])
                 .bindPopup('')
             this.destination = null
+
             return
         }
 
         const destination = this.links[id];
-        this.destination = new L.LatLng(destination.lat, destination.lon)
+        this.destination = L.latLng(destination.lat, destination.lon)
 
         this.map.panTo(this.destination)
 
         const description = destination.desc.replace(/\*BR\*/g, '<br/>')
 
+        console.log(id)
+
         this.destinationMarker.setLatLng(this.destination)
             .bindPopup('<b>' + destination.name + '</b><br>' + description)
+            .setIcon(
+                L.divIcon({
+                        html: '<b class="circle circle-dest">' + (parseInt(id)+1) + '</b>'
+                    })
+            )
 
         // Routing
         if (id > 0) {
@@ -287,4 +296,5 @@ class Map {
 
 const map = new Map('map')
 
-map.displayMaxFieldData($('#jsData').data('maxfield'))
+// map.displayMaxFieldData($('#jsData').data('maxfield'))
+map.parseGpx(gpxString)

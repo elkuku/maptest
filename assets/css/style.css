@@ -49,3 +49,9 @@ button#btnNext:hover {
     color: #000;
     text-align: center;
 }
+
+.circle-dest {
+    background: #ffd840;
+    font-size: 1.6em;
+
+}
