@@ -55,3 +55,8 @@ button#btnNext:hover {
     font-size: 1.6em;
 
 }
+
+a.routing-enabled {
+    color: orange;
+    cursor: pointer;
+}

@@ -49,17 +49,28 @@ class Map {
 
         this.linkSelector = L.control({position: 'bottomleft'})
 
-        this.destinationMarker = L.marker([0, 0]).bindPopup('Please load a GPX file...')
+        this.destinationMarker = L.marker([0, 0])
+            .bindPopup('Please load a GPX file...')
+            .addTo(this.map)
 
         this.userDestinationLine = L.polyline([], {
             color: 'blue',
             dashArray: '5, 15',
-        })
+        }).addTo(this.map)
+
+        this.userDistanceMarker = L.marker([0, 0],
+            {
+                icon: L.divIcon({
+                    className: 'user-distance',
+                    html: '<b class="circle">123m</b>'
+                })
+            })
+            .addTo(this.map)
 
         this.originDestinationLine = L.polyline([], {
             color: 'red',
             dashArray: '5, 15',
-        })
+        }).addTo(this.map)
 
         // Locate control
         L.control.locate({
@@ -73,16 +84,15 @@ class Map {
 
         // Routing control
         this.routingControl = L.Routing.control({
-            // stepToText: function(){return L.spanish},
             fitSelectedRoutes: false,
             createMarker: function () {
                 return false
             }
         }).addTo(this.map);
 
-        this.destinationMarker.addTo(this.map)
-        this.userDestinationLine.addTo(this.map)
-        this.originDestinationLine.addTo(this.map)
+        this.routingEnabled = true
+
+        this.addButtons()
     }
 
     addFileInputControl() {
@@ -100,6 +110,33 @@ class Map {
 
         document.getElementById('file-input')
             .addEventListener('change', this.readSingleFile.bind(this), false);
+    }
+
+    addButtons() {
+        const legend = L.control({position: 'topleft'})
+        legend.onAdd = function () {
+            let div = L.DomUtil.create('div', 'leaflet-bar')
+            div.innerHTML = '<a id="btnRoute" class="routing-enabled" title="Routing">R</a>'
+            div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation
+            L.DomEvent.disableClickPropagation(div)
+            return div
+        }
+
+        legend.addTo(this.map)
+        document.getElementById('btnRoute')
+            .addEventListener('click', this.enableRouting.bind(this), false);
+    }
+
+    enableRouting(e) {
+        if (this.routingEnabled) {
+            this.routingEnabled = false
+            $(e.target).removeClass('routing-enabled')
+            this.routingControl.remove()
+        } else {
+            this.routingEnabled = true
+            $(e.target).addClass('routing-enabled')
+            this.routingControl.addTo(this.map)
+        }
     }
 
     readSingleFile(e) {
@@ -204,7 +241,7 @@ class Map {
         L.polyline(pointList, {color: 'blue'}).addTo(this.linkLayer);
     }
 
-    addLinkSelector(links) {
+    addLinkSelector() {
         if (this.map.hasLayer(this.linkSelector)) {
             this.map.removeLayer(this.linkSelector);
         }
@@ -265,14 +302,12 @@ class Map {
 
         const description = destination.desc.replace(/\*BR\*/g, '<br/>')
 
-        console.log(id)
-
         this.destinationMarker.setLatLng(this.destination)
             .bindPopup('<b>' + destination.name + '</b><br>' + description)
             .setIcon(
                 L.divIcon({
-                        html: '<b class="circle circle-dest">' + (parseInt(id)+1) + '</b>'
-                    })
+                    html: '<b class="circle circle-dest">' + (parseInt(id) + 1) + '</b>'
+                })
             )
 
         // Routing
@@ -283,13 +318,22 @@ class Map {
                 L.latLng(destination.lat, destination.lon)
             ]
             this.originDestinationLine.setLatLngs(points)
-            this.routingControl.setWaypoints(points)
+            if (this.routingEnabled) {
+                this.routingControl.setWaypoints(points);
+            }
         }
     }
 
     onLocationFound(e) {
         if (this.destination) {
+            const distance = e.latlng.distanceTo(this.destination).toFixed(1)
             this.userDestinationLine.setLatLngs([e.latlng, this.destination])
+            this.userDistanceMarker
+                .setLatLng(e.latlng)
+                .setIcon(L.divIcon({
+                    className: 'user-distance',
+                    html: '<b class="circle">' + distance + 'm</b>'
+                }))
         }
     }
 }
